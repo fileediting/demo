@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Product Details</title>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+
+.container {
+  max-width: 800px;
+ min-width: 600px; 
+  margin: 50px auto;
+  padding: 20px;
+  border-radius: 0px;
+  /*box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);*/
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.container h1 {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.search-container {
+  position: relative;
+  margin-bottom: 20px;
+  margin-left: 10px;
+  flex-basis: 100%;
+  display: flex; /* Use flexbox to align items */
+  align-items: center; /* Align items vertically */
+}
+
+#searchInput {
+  flex: 1; /* Take up remaining space */
+  padding: 10px 15px;
+  font-size: 16px;
+  border: 1px solid #dfe1e5;
+  border-radius: 24px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+  margin-right: 10px; /* Add margin to the right to create space between input and suggestions */
+}
+
+
+#searchInput:focus {
+  outline: none;
+  border-color: #4d90fe;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: calc(100% - 2px);
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: none;
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  list-style-type: none;
+}
+
+.suggestions-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.suggestions-item:hover {
+  background-color: #f5f5f5;
+}
+
+.suggestions-item:first-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.suggestions-item:last-child {
+  border-radius: 0 0 4px 4px;
+}
+
+.product-details {
+  flex-basis: 100%;
+}
+
+.product-detail {
+  margin-bottom: 10px;
+}
+
+.product-label {
+  font-weight: bold;
+}
+
+.uagb-rm__content {
+  display: flex;
+  align-items: center;
+}
+
+.uagb-rm-details {
+  margin-left: 20px;
+}
+.manufacturer-name {
+      color: blue;
+      font-size: 20px;
+}
+
+.packing-text {
+  font-size: 10px;
+}
+.mrp-text {
+  font-size: 10px; 
+  /*padding: 10px;*/
+}
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1></h1>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search for a product...">
+      <ul id="suggestionsList" class="suggestions-list"></ul>
+    </div>
+    <div class="product-details" id="productDetails">
+      <!-- Product details will be displayed here -->
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const searchInput = document.getElementById('searchInput');
+      const suggestionsList = document.getElementById('suggestionsList');
+      const productDetailsContainer = document.getElementById('productDetails');
+
+      searchInput.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        if (query.length === 0) {
+          suggestionsList.style.display = 'none';
+          return;
+        }
+
+        fetch(`https://devproduct.relexhealth.com/api/v2/products?vProductName=${query}`)
+          .then(response => response.json())
+          .then(data => {
+            displaySuggestions(data);
+          })
+          .catch(error => {
+            console.error('Error fetching data:', error);
+          });
+      });
+
+      function displaySuggestions(suggestions) {
+        suggestionsList.innerHTML = '';
+        if (suggestions.length === 0) {
+          suggestionsList.style.display = 'none';
+          return;
+        }
+
+        suggestions.forEach(item => {
+          const li = document.createElement('li');
+          li.classList.add('suggestions-item');
+          li.textContent = item.vProductName; // Assuming 'vProductName' is the property for product name
+          li.addEventListener('click', function () {
+            searchInput.value = item.vProductName;
+            suggestionsList.style.display = 'none';
+            search();
+          });
+          suggestionsList.appendChild(li);
+        });
+
+        suggestionsList.style.display = 'block';
+      }
+
+   function search() {
+  const searchValue = searchInput.value.trim();
+  if (searchValue === '') {
+    alert('Please enter a product name.');
+    return;
+  }
+
+  fetch(`https://devproduct.relexhealth.com/api/v2/products?vProductName=${searchValue}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.length === 0) {
+        productDetailsContainer.innerHTML = '<p>No product found.</p>';
+        return;
+      }
+
+      const product = data[0]; 
+
+      // Log the product object to inspect its structure
+      console.log('Product Object:', product);
+
+      const productName = product.vProductName || 'N/A';
+      const manufacturerName = product.iManfId.vManfName || 'N/A';
+      const packId = product.iQtyPerStrip || 'N/A'; 
+      const packName = product.iPackingTypeId.vPackTypeName || 'N/A';
+      const unitmrp = product.nUnitMrp || 'N/A';
+      const dpcmrp = product.nDPCOMRP || 'N/A';
+
+      const detailsHTML = `
+        <div class="wp-block-uagb-restaurant-menu-child uagb-rest_menu__wrap">
+          <div class="uagb-rm__content">
+            <img class="" src="http://localhost/wordpress/wp-content/plugins/ultimate-addons-for-gutenberg//admin/assets/images/uag-placeholder.svg" width="100" height="100" loading="lazy" />
+            <div class="uagb-rm-details">
+              <h4 class="uagb-rm__title"></h4>
+              <div class="uagb-rm__desc">${productName}</div>
+              <div class="uagb-rm__price"><span class="manufacturer-name"> ${manufacturerName}</span></div>
+              <div class="uagb-rm__price"><span class ="packing-text">Packing:(${packId} Tablets in ${packName})</span></div>
+<div class="uagb-rm__price"><span class="mrp-text">Rs: ${unitmrp}/${packName}</span></div>
+<div class="uagb-rm__price"><span class="mrp-text">Rs: ${dpcmrp}</span></div>
+            </div>
+          </div>
+          <div class="uagb-rm__separator"></div>
+        </div>
+      `;
+      productDetailsContainer.innerHTML = detailsHTML;
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      productDetailsContainer.innerHTML = '<p>Error fetching product details.</p>';
+    });
+}
+
+
+
+      searchInput.addEventListener('keydown', function (event) {
+        if (event.keyCode === 13) {
+          search();
+        }
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!searchInput.contains(event.target) && !suggestionsList.contains(event.target)) {
+          suggestionsList.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
